@@ -1,15 +1,16 @@
 from pyuvm import uvm_object
 from pyuvm.s17_register_enumerations import *
-from pyuvm.error_classes import UVMFatalError
 from pyuvm.s14_15_python_sequences import uvm_sequencer
-
-
-# TODO replace declaration with import from s19
-class uvm_reg_adapter(uvm_object):
-    pass
+from pyuvm.s14_15_python_sequences import uvm_sequence
+from pyuvm.s14_15_python_sequences import uvm_sequence_item
+from pyuvm.error_classes import UVMFatalError
 
 
 class uvm_reg(uvm_object):
+    pass
+
+
+class uvm_reg_adapter(uvm_object):
     pass
 
 
@@ -323,3 +324,185 @@ class uvm_reg_field(uvm_object):
     def get_reset(self):
         # TODO Check that 'configure' was called
         return self._reset
+
+
+# Implement uvm_reg_item, uvm_reg_bus_op and uvm_reg_adapter
+# to avoid circular imports
+# 19.1.1 uvm_reg_item
+class uvm_reg_item(uvm_sequence_item):
+    def __init__(self, name=""):
+        super().__init__(name)
+        self._element_kind: uvm_elem_kind_e = None
+        self._kind: uvm_access_e = None
+        self._data = []
+        self._size: int = 0
+        self._offset: uvm_reg_addr_t = 0
+        self._status: uvm_status_e = None
+        self._map: uvm_reg_map = None
+        self._door: uvm_door_e = None
+        self._parent_sequence: uvm_sequence = None
+        self._priority: int = None
+        self._extension: uvm_object = None
+        self._backdoor_kind: str = ""
+
+    # 19.1.1.2.1 Element kind
+    def set_element_kind(self, element_kind: uvm_elem_kind_e) -> None:
+        self._element_kind = element_kind
+
+    def get_element_kind(self) -> uvm_elem_kind_e:
+        return self._element_kind
+
+    # 19.1.1.2.2 Element
+    # Implementation not required since type can be inferred
+    # using isinstance() method
+
+    # 19.1.1.2.3 Kind
+    def set_kind(self, kind: uvm_access_e) -> None:
+        self._kind = kind
+
+    def get_kind(self) -> uvm_access_e:
+        return self._kind
+
+    # 19.1.1.2.4 Data value
+    def set_value(self, value: uvm_reg_data_t, idx: int = 0) -> None:
+        self._data[idx] = value
+
+    def get_value(self, idx: int = 0) -> uvm_reg_data_t:
+        return self._data[idx]
+
+    def set_value_size(self, sz: int) -> None:
+        self._size = sz
+
+    def get_value_size(self):
+        return self._size
+
+    def set_value_array(self, value: list = []) -> None:
+        self._data = value
+
+    def get_value_array(self) -> list:
+        return self._data
+
+    # 19.1.1.2.5 Offset
+    def set_offset(self, offset: uvm_reg_addr_t) -> None:
+        self._offset = offset
+
+    def get_offset(self) -> uvm_reg_addr_t:
+        return self._offset
+
+    # 19.1.1.2.6 Status
+    def set_status(self, status: uvm_status_e) -> None:
+        self._status = status
+
+    def get_status(self) -> uvm_status_e:
+        return self._status
+
+    # 19.1.1.2.8 Map
+    def set_map(self, map: uvm_reg_map) -> None:
+        self._map = map
+
+    def get_map(self) -> uvm_reg_map:
+        return self._map
+
+    # 19.1.1.2.9 Door
+    def set_door(self, door: uvm_door_e) -> None:
+        self._door = door
+
+    def get_door(self) -> uvm_door_e:
+        return self._door
+
+    # 19.1.1.2.10 Parent sequence
+    def set_parent_sequence(self, parent: uvm_sequence) -> None:
+        self._parent_sequence = parent
+
+    def get_parent_sequence(self) -> uvm_sequence:
+        return self._parent_sequence
+
+    # 19.1.1.2.11 Priority
+    def set_priority(self, value: int) -> None:
+        self._priority = value
+
+    def get_priority(self) -> int:
+        return self._priority
+
+    # 19.1.1.2.12 Extension
+    def set_extension(self, extension: uvm_object) -> None:
+        self._extension = extension
+
+    def get_extension(self) -> uvm_object:
+        return self._extension
+
+    # 19.1.1.2.13 Backdoor kind
+    def set_bd_kind(self, bd_kind: str) -> None:
+        # Update only if path is BACKDOOR
+        if self._door == uvm_door_e.UVM_BACKDOOR:
+            self._backdoor_kind = bd_kind
+        # Default vlaue of _backdoor_kind is set to empty string
+        # as per spec
+        else:
+            pass
+
+    def get_bd_kind(self) -> str:
+        return self._backdoor_kind
+
+    # 19.1.1.3.2 convert2string
+    def __str__(self) -> str:
+        return f"""
+        name : {self.get_name()}
+        element_kind : {self._element_kind}
+        kind : {self._kind}
+        data : {self._data}
+        size : {self._size}
+        offset : {self._offset}
+        status : {self._status}
+        map: {self._map}
+        door : {self._door}
+        parent : {self._parent_sequence}
+        priority : {self._priority}
+        extension : {self._extension}
+        backdoor_kind : {self._backdoor_kind}
+        """
+
+
+# 19.1.2 uvm_reg_bus_op
+class uvm_reg_bus_op():
+    def __init__(self,
+                 kind: uvm_access_e,
+                 addr: uvm_reg_addr_t,
+                 data: uvm_reg_data_t,
+                 n_bits: int,
+                 byte_en: uvm_reg_data_t,
+                 status: uvm_status_e):
+        self._kind = kind
+        self._addr = addr
+        self._data = data
+        self._n_bits = n_bits
+        self._byte_en = byte_en
+        self._status = status
+
+    def __str__(self):
+        return f"""
+        kind : {self._kind}
+        addr : {self._addr}
+        data : {self._data}
+        n_bytes : {self._n_bits}
+        byte_en : {self._byte_en}
+        status : {self._status}
+        """
+
+
+# 19.2.1 uvm_reg_adapter
+class uvm_reg_adapter(uvm_object):
+    def __init__(self, name=''):
+        super().__init__(name)
+        self.byte_enable: bool = False
+        self.provides_responses: bool = False
+        self.parent_sequence: uvm_sequence = None
+        self._reg_item: uvm_reg_item = None
+
+    # 19.2.1.2.5 reg2bus
+    def reg2bus(self, rw: uvm_reg_bus_op) -> uvm_sequence_item:
+        raise UVMFatalError("This method needs to be implemented")
+
+    # 19.2.1.2.6 bus2reg
+    def bus2reg(self, bus_item: uvm_sequence_item) -> uvm_reg_bus_op:
+        raise UVMFatalError("This method needs to be implemented")
